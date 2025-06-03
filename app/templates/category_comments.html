@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ category.name }} Comments - Chinese News</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>{{ category.name }} Comments</h1>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <a href="/" class="nav-tab">📅 Calendar</a>
+            <a href="/comments" class="nav-tab">💬 All Comments</a>
+            <a href="#" class="nav-tab active">📝 {{ category.name }}</a>
+        </div>
+
+        <!-- Category Comments -->
+        <div class="news-container">
+            <div class="category-comments">
+                <div class="category-header">
+                    <h2>{{ category.name }}</h2>
+                    {% if category.description %}
+                    <p class="category-description">{{ category.description }}</p>
+                    {% endif %}
+                    <div class="category-meta">
+                        <span>{{ comments|length }} comments in this category</span>
+                        <span>Created: {{ category.created_at.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                </div>
+                
+                {% if comments %}
+                <div class="comments-list">
+                    {% for item in comments %}
+                    <div class="comment-item">
+                        <div class="comment-header">
+                            <div class="comment-meta">
+                                {% if item.comment.user_name %}
+                                <span class="comment-author">{{ item.comment.user_name }}</span>
+                                {% else %}
+                                <span class="comment-author">Anonymous</span>
+                                {% endif %}
+                                <span class="comment-date">{{ item.comment.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            </div>
+                            <div class="comment-actions">
+                                <button class="delete-comment-btn" onclick="deleteComment({{ item.comment.id }}, '{{ item.comment.user_name or 'Anonymous' }}')" title="Delete Comment">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="comment-content">
+                            {{ item.comment.comment_text }}
+                        </div>
+                        
+                        <div class="comment-footer">
+                            <div class="news-reference">
+                                <span class="news-title">
+                                    <a href="/article/{{ item.news.id }}">{{ item.news.title }}</a>
+                                </span>
+                                {% if item.news.title_english %}
+                                <span class="news-title-english">{{ item.news.title_english }}</span>
+                                {% endif %}
+                                <div class="news-meta">
+                                    <span class="news-date">{{ item.news.collection_date.strftime('%Y-%m-%d') }}</span>
+                                    <a href="{{ item.news.source_url }}" target="_blank" class="source-link">View Original</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <h3>No Comments Yet</h3>
+                    <p>No comments have been added to the "{{ category.name }}" category yet.</p>
+                    <a href="/" class="btn btn-primary">Browse News to Add Comments</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Back Navigation -->
+        <div class="content-actions">
+            <a href="/comments" class="btn btn-secondary">← Back to All Categories</a>
+            <a href="/" class="btn btn-secondary">📅 Back to Calendar</a>
+        </div>
+    </div>
+
+    <style>
+        .category-comments {
+            padding: 20px;
+        }
+        
+        .category-header {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .category-header h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .category-description {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+        }
+        
+        .category-meta {
+            display: flex;
+            gap: 20px;
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .comments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .comment-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .comment-meta {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .comment-author {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .comment-date {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .comment-content {
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+        
+        .comment-footer {
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        
+        .news-reference {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .news-title a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .news-title a:hover {
+            text-decoration: underline;
+        }
+        
+        .news-title-english {
+            display: block;
+            color: #666;
+            font-style: italic;
+            margin-top: 5px;
+        }
+        
+        .news-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        
+        .news-date {
+            color: #888;
+        }
+        
+        .source-link {
+            color: #28a745;
+            text-decoration: none;
+        }
+        
+        .source-link:hover {
+            text-decoration: underline;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .empty-state h3 {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .empty-state p {
+            color: #888;
+            margin-bottom: 20px;
+        }
+        
+        .comment-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .delete-comment-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background-color 0.2s;
+        }
+        
+        .delete-comment-btn:hover {
+            background: #c82333;
+        }
+    </style>
+    
+    <script>
+        async function deleteComment(commentId, userName) {
+            if (!confirm(`Are you sure you want to delete this comment by ${userName}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/comments/${commentId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(result.message);
+                    // Reload the page to reflect the changes
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert(`Failed to delete comment: ${error.detail || 'Unknown error'}`);
+                }
+            } catch (error) {
+                alert(`Error deleting comment: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html> 

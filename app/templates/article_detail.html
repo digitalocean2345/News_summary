@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }} - Chinese News</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Chinese News Content Viewer</h1>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <a href="/" class="nav-tab">📅 Calendar</a>
+            <a href="/news/{{ article.collection_date }}" class="nav-tab">📰 Headlines</a>
+            <a href="#" class="nav-tab active">📖 Article Detail</a>
+            <a href="/comments" class="nav-tab">💬 Comments</a>
+        </div>
+
+        <!-- Article Detail Container -->
+        <div class="news-container">
+            <div class="article-detail">
+                <!-- Article Header -->
+                <div class="article-header">
+                    <h1 class="article-title">{{ article.title }}</h1>
+                    {% if article.title_english %}
+                    <h2 class="article-title-english">{{ article.title_english }}</h2>
+                    {% endif %}
+                    
+                    <div class="article-meta">
+                        <div class="meta-item">
+                            📅 {{ article.collection_date.strftime('%Y-%m-%d') }}
+                        </div>
+                        <div class="meta-item">
+                            🌐 {{ article.source_domain or 'Unknown Source' }}
+                        </div>
+                        <div class="meta-item">
+                            🔗 <a href="{{ article.source_url }}" target="_blank">Original Article</a>
+                        </div>
+                        <div class="meta-item">
+                            <span class="status-badge content-status">
+                                {% if article.is_content_scraped %}Complete{% else %}Pending{% endif %}
+                            </span>
+                            Content
+                        </div>
+                        <div class="meta-item">
+                            <span class="status-badge translation-status">
+                                {% if article.is_content_translated %}Complete{% else %}Pending{% endif %}
+                            </span>
+                            Translation
+                        </div>
+                        <div class="meta-item">
+                            <span class="status-badge summary-status">
+                                {% if article.is_summarized %}Complete{% else %}Pending{% endif %}
+                            </span>
+                            Summary
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Actions -->
+                <div class="content-actions">
+                    <button class="btn btn-primary" data-action="scrape-content"
+                            {% if article.is_content_scraped %}disabled{% endif %}>
+                        {% if article.is_content_scraped %}✅ Content Scraped{% else %}🔍 Scrape Content{% endif %}
+                    </button>
+                    
+                    <button class="btn btn-warning" data-action="generate-summary"
+                            {% if not article.is_content_scraped or article.is_summarized %}disabled{% endif %}>
+                        {% if article.is_summarized %}✅ Summary Generated{% else %}📝 Generate Summary{% endif %}
+                    </button>
+                    
+                    <button class="btn btn-success" data-action="save-to-category"
+                            {% if not article.is_summarized %}disabled{% endif %}>
+                        💾 Save to Category
+                    </button>
+                </div>
+
+                <!-- Language Toggle -->
+                {% if article.full_content or article.summary %}
+                <div class="language-toggle">
+                    <button class="lang-btn active" data-lang="zh">中文</button>
+                    <button class="lang-btn" data-lang="en">English</button>
+                </div>
+                {% endif %}
+
+                <!-- Full Content Section -->
+                <div id="content-section" class="content-section {% if not article.full_content and not article.full_content_english %}hidden{% endif %}">
+                    <h3>📄 Full Article Content</h3>
+                    
+                    <!-- Chinese Content -->
+                    <div data-lang="zh" class="{% if not article.full_content %}hidden{% endif %}">
+                        <div id="full-content-zh" class="content-text chinese">
+                            {% if article.full_content %}
+                                {{ article.full_content }}
+                            {% else %}
+                                <em>Content not available in Chinese</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- English Content -->
+                    <div data-lang="en" class="hidden">
+                        <div id="full-content-en" class="content-text english">
+                            {% if article.full_content_english %}
+                                {{ article.full_content_english }}
+                            {% else %}
+                                <em>Content not available in English</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Section -->
+                <div id="summary-section" class="content-section {% if not article.summary and not article.summary_english %}hidden{% endif %}">
+                    <h3>📋 AI-Generated Summary</h3>
+                    
+                    <!-- Chinese Summary -->
+                    <div data-lang="zh" class="{% if not article.summary %}hidden{% endif %}">
+                        <div id="summary-zh" class="content-text summary-text chinese">
+                            {% if article.summary %}
+                                {{ article.summary }}
+                            {% else %}
+                                <em>Summary not available in Chinese</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- English Summary -->
+                    <div data-lang="en" class="hidden">
+                        <div id="summary-en" class="content-text summary-text english">
+                            {% if article.summary_english %}
+                                {{ article.summary_english }}
+                            {% else %}
+                                <em>Summary not available in English</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Management Section -->
+                {% if article.is_summarized %}
+                <div class="category-section">
+                    <h3>📁 Save to Personal Categories</h3>
+                    <p class="text-muted">Select a category to save this article summary for future reference:</p>
+                    
+                    <div class="category-grid">
+                        {% for category in categories %}
+                        <div class="category-card" data-category-id="{{ category.id }}">
+                            <div class="category-name">{{ category.name }}</div>
+                            <div class="category-description">{{ category.description }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Content Preview (if no content scraped yet) -->
+                {% if not article.full_content %}
+                <div class="content-section">
+                    <h3>🔍 Content Preview</h3>
+                    <div class="content-text">
+                        <p><strong>Title:</strong> {{ article.title }}</p>
+                        <p><strong>Source:</strong> <a href="{{ article.source_url }}" target="_blank">{{ article.source_url }}</a></p>
+                        <p><em>Click "Scrape Content" above to fetch the full article content and enable AI summarization.</em></p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Debug Information (for development) -->
+                {% if debug_mode %}
+                <div class="content-section">
+                    <h3>🔧 Debug Information</h3>
+                    <div class="content-text">
+                        <p><strong>Article ID:</strong> {{ article.id }}</p>
+                        <p><strong>Content Language:</strong> {{ article.content_language }}</p>
+                        <p><strong>Content Scraped:</strong> {{ article.is_content_scraped }}</p>
+                        <p><strong>Content Translated:</strong> {{ article.is_content_translated }}</p>
+                        <p><strong>Is Summarized:</strong> {{ article.is_summarized }}</p>
+                        <p><strong>Content Scraped At:</strong> {{ article.content_scraped_at }}</p>
+                        <p><strong>Content Translated At:</strong> {{ article.content_translated_at }}</p>
+                        <p><strong>Summarized At:</strong> {{ article.summarized_at }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Comments Section -->
+                <div class="content-section comments-section">
+                    <h3>💬 Comments & Discussion</h3>
+                    
+                    <!-- Add Comment Form -->
+                    <div class="comment-form">
+                        <h4>Add Your Comment</h4>
+                        <form id="comment-form" onsubmit="addComment(event)">
+                            <div class="form-group">
+                                <label for="user-name">Your Name (Optional):</label>
+                                <input type="text" id="user-name" name="user_name" placeholder="Anonymous">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="category-select">Category:</label>
+                                <select id="category-select" name="category_id">
+                                    <option value="">No Category</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                    <option value="new">+ Create New Category</option>
+                                </select>
+                            </div>
+                            
+                            <!-- New Category Input (hidden by default) -->
+                            <div class="form-group" id="new-category-group" style="display: none;">
+                                <label for="new-category-name">New Category Name:</label>
+                                <input type="text" id="new-category-name" placeholder="e.g., China Economy, China Policy">
+                                <label for="new-category-description">Description (Optional):</label>
+                                <input type="text" id="new-category-description" placeholder="Brief description of this category">
+                                <button type="button" onclick="createNewCategory()">Create Category</button>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="comment-text">Your Comment:</label>
+                                <textarea id="comment-text" name="comment_text" rows="4" required 
+                                        placeholder="Share your thoughts on this news article..."></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">Add Comment</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Existing Comments Display -->
+                    <div class="comments-display">
+                        <h4 id="comments-header">Comments</h4>
+                        <div id="comments-list">
+                            <!-- Comments will be loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Back Navigation -->
+        <div class="content-actions">
+            <a href="/news/{{ article.collection_date }}" class="btn btn-secondary">← Back to Headlines</a>
+            <a href="/" class="btn btn-secondary">📅 Back to Calendar</a>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', path='/js/content-manager.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/comments.js') }}"></script>
+
+    <style>
+        /* Comment Section Styles */
+        .comments-section {
+            border-top: 2px solid #eee;
+            margin-top: 30px;
+            padding-top: 30px;
+        }
+        
+        .comment-form {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .comment-form h4 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+        
+        #new-category-group {
+            background: #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        
+        #new-category-group button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        #new-category-group button:hover {
+            background: #218838;
+        }
+        
+        .comments-display h4 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .comment-item {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: white;
+        }
+        
+        .comment-header {
+            margin-bottom: 10px;
+        }
+        
+        .comment-meta {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .comment-author {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .comment-date {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .comment-category {
+            background: #007bff;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }
+        
+        .comment-content {
+            color: #333;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        .no-comments {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+    </style>
+</body>
+</html> 

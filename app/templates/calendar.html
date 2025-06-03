@@ -1,0 +1,125 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Calendar</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .calendar-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .calendar-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .calendar-header div {
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+        }
+        .calendar-day {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .calendar-day:hover {
+            background-color: #f0f0f0;
+        }
+        .calendar-day.has-news {
+            background-color: #e3f2fd;
+        }
+        .calendar-day a {
+            color: #2c3e50;
+            text-decoration: none;
+        }
+        .current-month {
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .month-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+        .nav-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .nav-btn:hover {
+            background-color: #0056b3;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <h1>News Calendar</h1>
+        <div class="month-navigation">
+            <a href="/?year={{ prev_year }}&month={{ prev_month }}" class="nav-btn">← Previous</a>
+            <div class="current-month">{{ current_month }}</div>
+            <a href="/?year={{ next_year }}&month={{ next_month }}" class="nav-btn">Next →</a>
+        </div>
+        <div class="calendar-header">
+            <div>Sun</div>
+            <div>Mon</div>
+            <div>Tue</div>
+            <div>Wed</div>
+            <div>Thu</div>
+            <div>Fri</div>
+            <div>Sat</div>
+        </div>
+        <div class="calendar">
+            {% for week in calendar_data %}
+                {% for day in week %}
+                    {% if day %}
+                        <div class="calendar-day {% if day.has_news %}has-news{% endif %}">
+                            <a href="/news/{{ day.date }}">{{ day.day }}</a>
+                        </div>
+                    {% else %}
+                        <div class="calendar-day"></div>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        </div>
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <a href="/" class="nav-tab active">📅 Calendar</a>
+            <a href="/sources" class="nav-tab">🔗 Sources</a>
+        </div>
+    </div>
+</body>
+</html>

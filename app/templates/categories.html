@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chinese News Headlines - {{ selected_date }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Chinese News Headlines - {{ selected_date }}</h1>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <a href="/" class="nav-tab">📅 Calendar</a>
+            <a href="#" class="nav-tab active">📰 Headlines</a>
+            <a href="/sources" class="nav-tab">🔗 Sources</a>
+        </div>
+
+        <!-- News Container -->
+        <div class="news-container">
+            <!-- Main Navigation -->
+            <div class="main-nav">
+                {% for source_name in news_by_source.keys() %}
+                    <button class="main-tab {% if loop.first %}active{% endif %}" 
+                            onclick="showMainTab(event, '{{ source_name|replace(' ', '_') }}')">
+                        {{ source_name }}
+                        <span class="news-count">({{ news_by_source[source_name]|length }})</span>
+                    </button>
+                {% endfor %}
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                {% for source_name, news_items in news_by_source.items() %}
+                    <div id="{{ source_name|replace(' ', '_') }}" 
+                         class="tab-content {% if loop.first %}active{% endif %}">
+                        {% if news_items %}
+                            {% for item in news_items %}
+                                <div class="news-item">
+                                    <a href="/article/{{ item.id }}">
+                                        <div class="title-chinese">{{ item.title }}</div>
+                                        {% if item.title_english %}
+                                            <div class="title-english">{{ item.title_english }}</div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="article-meta">
+                                        <div class="meta-item">
+                                            📅 {{ item.collection_date.strftime('%Y-%m-%d') }}
+                                        </div>
+                                        <div class="meta-item">
+                                            <span class="status-badge {% if item.is_content_scraped %}status-scraped{% else %}status-not-scraped{% endif %}">
+                                                {% if item.is_content_scraped %}Content Available{% else %}Content Pending{% endif %}
+                                            </span>
+                                        </div>
+                                        {% if item.is_summarized %}
+                                        <div class="meta-item">
+                                            <span class="status-badge status-summarized">Summarized</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="meta-item">
+                                            <a href="{{ item.source_url }}" target="_blank" class="btn btn-secondary" style="font-size: 12px; padding: 4px 8px;">
+                                                🔗 Original
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="no-news">
+                                <p>No news articles found for this source.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <!-- No news at all -->
+                {% if not news_by_source %}
+                    <div class="no-news">
+                        <h3>No news articles found for {{ selected_date }}</h3>
+                        <p>Try selecting a different date from the calendar.</p>
+                        <a href="/" class="btn btn-primary">← Back to Calendar</a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Back Navigation -->
+            <div class="content-actions" style="padding: 20px;">
+                <a href="/" class="btn btn-secondary">← Back to Calendar</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showMainTab(evt, tabName) {
+            // Hide all tab contents
+            var tabContents = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+
+            // Remove active class from all main tabs
+            var mainTabs = document.getElementsByClassName("main-tab");
+            for (var i = 0; i < mainTabs.length; i++) {
+                mainTabs[i].classList.remove("active");
+            }
+
+            // Show the specific tab content and mark the button as active
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+    </script>
+</body>
+</html>
