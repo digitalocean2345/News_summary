@@ -1,0 +1,75 @@
+name: News Scraper Automation
+
+on:
+  schedule:
+    # Run at 6 AM and 6 PM UTC (adjust timezone as needed)
+    - cron: '0 6,18 * * *'
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  scrape-news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Trigger News Scraper
+        run: |
+          echo "🚀 Starting news scraping at $(date)"
+          
+          # Make the API request with timeout and proper error handling
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.RAILWAY_APP_URL }}/api/news/fetch" \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: GitHub-Actions-Scraper" \
+            --max-time 600 \
+            --retry 3 \
+            --retry-delay 10)
+          
+          # Extract HTTP status code and response body
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "📊 HTTP Status: $http_code"
+          echo "📝 Response: $body"
+          
+          # Check if request was successful
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ News scraping completed successfully!"
+            
+            # Parse and display results if JSON response
+            if command -v jq >/dev/null 2>&1; then
+              echo "$body" | jq -r '"📰 New articles: " + (.new_articles | tostring) + ", 🔄 Duplicates skipped: " + (.duplicates_skipped | tostring)' 2>/dev/null || echo "$body"
+            fi
+          else
+            echo "❌ News scraping failed with HTTP status: $http_code"
+            echo "Response body: $body"
+            exit 1
+          fi
+
+      - name: Health Check
+        if: always()
+        run: |
+          echo "🏥 Checking application health..."
+          health_response=$(curl -s -w "\n%{http_code}" \
+            "${{ secrets.RAILWAY_APP_URL }}/health" \
+            --max-time 30)
+          
+          health_code=$(echo "$health_response" | tail -n1)
+          health_body=$(echo "$health_response" | head -n -1)
+          
+          if [ "$health_code" -eq 200 ]; then
+            echo "✅ Application is healthy"
+            echo "$health_body"
+          else
+            echo "⚠️ Health check failed with status: $health_code"
+            echo "$health_body"
+          fi
+
+      - name: Notify Results
+        if: always()
+        run: |
+          echo "📋 Job Summary:"
+          echo "⏰ Timestamp: $(date)"
+          echo "🌐 App URL: ${{ secrets.RAILWAY_APP_URL }}"
+          echo "🔧 Workflow: ${{ github.workflow }}"
+          echo "📍 Run ID: ${{ github.run_id }}" 

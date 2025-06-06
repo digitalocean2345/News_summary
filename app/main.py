@@ -1053,3 +1053,31 @@ async def comments_by_category_view(
         logger.error(f"Error in category comments view: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Health check endpoint for monitoring and GitHub Actions
+@app.get("/health")
+async def health_check(db: Session = Depends(get_db)):
+    """Health check endpoint for monitoring and deployment verification"""
+    try:
+        # Test database connection
+        db.execute("SELECT 1")
+        
+        # Get basic stats
+        news_count = db.query(News).count()
+        
+        return {
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "service": "news-aggregator",
+            "database": "connected",
+            "total_articles": news_count,
+            "version": "2.0.0"
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "timestamp": datetime.now().isoformat(),
+            "service": "news-aggregator",
+            "database": "disconnected",
+            "error": str(e)
+        }
+
