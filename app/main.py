@@ -25,6 +25,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from typing import List, Dict
 from app.services.translator import MicrosoftTranslator
 import os
+from sqlalchemy import text
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -1059,7 +1060,7 @@ async def health_check(db: Session = Depends(get_db)):
     """Health check endpoint for monitoring and deployment verification"""
     try:
         # Test database connection
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         
         # Get basic stats
         news_count = db.query(News).count()

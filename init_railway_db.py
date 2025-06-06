@@ -11,6 +11,7 @@ sys.path.append(str(Path(__file__).parent))
 
 from app.models.models import Base
 from app.database import engine
+from sqlalchemy import text
 import logging
 
 # Configure logging
@@ -32,14 +33,14 @@ def verify_database():
     """Verify database connection and tables"""
     try:
         with engine.connect() as conn:
-            result = conn.execute("SELECT 1")
+            result = conn.execute(text("SELECT 1"))
             logger.info("✅ Database connection verified")
             
             # Check if main tables exist
             tables = ['news', 'categories', 'comments', 'saved_summaries']
             for table in tables:
                 try:
-                    result = conn.execute(f"SELECT COUNT(*) FROM {table}")
+                    result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
                     count = result.scalar()
                     logger.info(f"✅ Table '{table}' exists with {count} records")
                 except Exception as e:
