@@ -1200,13 +1200,12 @@ async def initialize_database():
         # Create all tables
         Base.metadata.create_all(bind=engine)
         
-        # Verify tables were created
+        # Verify tables were created - SQLite compatible query
         with engine.connect() as conn:
             result = conn.execute(text("""
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public'
-                ORDER BY table_name
+                SELECT name FROM sqlite_master 
+                WHERE type='table' 
+                ORDER BY name
             """))
             tables = [row[0] for row in result.fetchall()]
         
@@ -1219,4 +1218,97 @@ async def initialize_database():
     except Exception as e:
         logger.error(f"Database initialization failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database initialization failed: {str(e)}")
+
+@app.post("/api/admin/add-test-data")
+async def add_test_data(db: Session = Depends(get_db)):
+    """Add some test news data for demonstration"""
+    try:
+        from datetime import datetime, date
+        
+        # Add test categories
+        categories_data = [
+            {"name": "Technology", "description": "Tech news and innovations"},
+            {"name": "Business", "description": "Business and finance news"},
+            {"name": "Environment", "description": "Environmental and climate news"},
+            {"name": "Health", "description": "Health and medical news"}
+        ]
+        
+        categories = {}
+        for cat_data in categories_data:
+            category = db.query(Category).filter(Category.name == cat_data["name"]).first()
+            if not category:
+                category = Category(**cat_data)
+                db.add(category)
+                db.commit()
+                db.refresh(category)
+            categories[cat_data["name"]] = category
+        
+        # Add test news articles
+        today = date.today()
+        test_articles = [
+            {
+                "headline": "Tech Giants Report Strong Q4 Earnings",
+                "summary": "Major technology companies showed robust financial performance in the fourth quarter.",
+                "content": "Technology giants reported strong earnings for Q4 2024, with cloud computing and AI investments paying off significantly.",
+                "url": "https://example.com/tech-earnings",
+                "published_at": datetime.now(),
+                "date": today,
+                "category_id": categories["Technology"].id,
+                "source": "Test Source"
+            },
+            {
+                "headline": "Global Climate Summit Reaches Historic Agreement",
+                "summary": "World leaders agreed on ambitious carbon reduction targets at the international climate summit.",
+                "content": "The global climate summit concluded with unprecedented agreement on carbon emission reduction targets.",
+                "url": "https://example.com/climate-summit",
+                "published_at": datetime.now(),
+                "date": today,
+                "category_id": categories["Environment"].id,
+                "source": "Test Source"
+            },
+            {
+                "headline": "Revolutionary Medical Breakthrough in Cancer Treatment",
+                "summary": "Scientists announce a breakthrough in personalized cancer therapy.",
+                "content": "Researchers have developed a new personalized cancer treatment approach that shows remarkable success rates.",
+                "url": "https://example.com/cancer-breakthrough",
+                "published_at": datetime.now(),
+                "date": today,
+                "category_id": categories["Health"].id,
+                "source": "Test Source"
+            },
+            {
+                "headline": "Asian Markets Rally on Economic Optimism",
+                "summary": "Stock markets across Asia showed strong gains as investors responded positively.",
+                "content": "Asian stock markets experienced significant rallies as positive economic data boosted investor confidence.",
+                "url": "https://example.com/asia-markets",
+                "published_at": datetime.now(),
+                "date": today,
+                "category_id": categories["Business"].id,
+                "source": "Test Source"
+            }
+        ]
+        
+        added_articles = []
+        for article_data in test_articles:
+            # Check if article already exists
+            existing = db.query(News).filter(News.headline == article_data["headline"]).first()
+            if not existing:
+                article = News(**article_data)
+                db.add(article)
+                db.commit()
+                db.refresh(article)
+                added_articles.append(article.headline)
+        
+        return {
+            "message": "Test data added successfully",
+            "categories_created": len(categories),
+            "articles_added": len(added_articles),
+            "articles": added_articles,
+            "status": "success"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to add test data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add test data: {str(e)}")
 

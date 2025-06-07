@@ -57,9 +57,9 @@ def create_tables():
         # Verify tables were created
         with engine.connect() as conn:
             result = conn.execute(text("""
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public'
+                SELECT name 
+                FROM sqlite_master
+                WHERE type='table'
             """))
             tables = [row[0] for row in result.fetchall()]
             print(f"📊 Created tables: {', '.join(tables)}")

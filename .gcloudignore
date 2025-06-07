@@ -1,0 +1,48 @@
+# Git files
+.git/
+.gitignore
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Local database files
+*.db
+news.db
+news_aggregator.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+test_*.py
+debug_*.py
+check_*.py
+migrate_*.py
+
+# Documentation files
+*.md
+!README.md
+
+# Railway specific files
+railway.toml
+RAILWAY_*
+
+# Temporary files
+*.tmp
+*.log 

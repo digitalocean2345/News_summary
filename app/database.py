@@ -10,8 +10,14 @@ if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 if not DATABASE_URL:
-    # Local development with SQLite
-    DATABASE_URL = "sqlite:///./news.db"
+    # Local development with SQLite - use absolute path for App Engine
+    if os.getenv('ENVIRONMENT') == 'production':
+        # In production (App Engine), create database in /tmp directory
+        DATABASE_URL = "sqlite:////tmp/news.db"
+    else:
+        # Local development
+        DATABASE_URL = "sqlite:///./news.db"
+    
     engine = create_engine(
         DATABASE_URL, 
         connect_args={

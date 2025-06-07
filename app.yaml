@@ -1,0 +1,21 @@
+runtime: python311
+
+# No DATABASE_URL environment variable = uses SQLite (same as localhost)
+env_variables:
+  ENVIRONMENT: production
+  
+# Specify the entrypoint with uvicorn workers for FastAPI
+entrypoint: gunicorn -k uvicorn.workers.UvicornWorker -b :$PORT main:app
+
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  target_cpu_utilization: 0.6
+
+handlers:
+- url: /static
+  static_dir: app/static
+  
+- url: /.*
+  script: auto
+  secure: always 
