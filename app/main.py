@@ -74,15 +74,18 @@ app.add_middleware(
 @app.post("/api/news/fetch")
 async def fetch_news(db: Session = Depends(get_db)):
     try:
-        # Initialize all scrapers
-        pd_scraper = PeoplesDailyScraper(translate_immediately=False)
-        paper_scraper = PaperScraper(translate_immediately=False)
-        sc_scraper = StateCouncilScraper(translate_immediately=False)
-        nbs_scraper = NBSScraper(translate_immediately=False)
-        tao_scraper = TaiwanAffairsScraper(translate_immediately=False)
-        mnd_scraper = MNDScraper(translate_immediately=False)
-        guancha_scraper = GuanchaScraper(translate_immediately=False)
-        gt_scraper = GlobalTimesScraper(translate_immediately=False)
+        # Check if we're in production (Railway) environment
+        is_production = bool(os.getenv('DATABASE_URL'))
+        
+        # Initialize all scrapers - enable translation in production
+        pd_scraper = PeoplesDailyScraper(translate_immediately=is_production)
+        paper_scraper = PaperScraper(translate_immediately=is_production)
+        sc_scraper = StateCouncilScraper(translate_immediately=is_production)
+        nbs_scraper = NBSScraper(translate_immediately=is_production)
+        tao_scraper = TaiwanAffairsScraper(translate_immediately=is_production)
+        mnd_scraper = MNDScraper(translate_immediately=is_production)
+        guancha_scraper = GuanchaScraper(translate_immediately=is_production)
+        gt_scraper = GlobalTimesScraper(translate_immediately=is_production)
         
         # Fetch articles from all sources
         pd_articles = pd_scraper.fetch_news()
@@ -161,15 +164,18 @@ async def fetch_news_by_date(date: str, db: Session = Depends(get_db)):
         # Parse the date
         date_obj = datetime.strptime(date, '%Y-%m-%d').date()
         
-        # Initialize all scrapers
-        pd_scraper = PeoplesDailyScraper(translate_immediately=False)
-        paper_scraper = PaperScraper(translate_immediately=False)
-        sc_scraper = StateCouncilScraper(translate_immediately=False)
-        nbs_scraper = NBSScraper(translate_immediately=False)
-        tao_scraper = TaiwanAffairsScraper(translate_immediately=False)
-        mnd_scraper = MNDScraper(translate_immediately=False)
-        guancha_scraper = GuanchaScraper(translate_immediately=False)
-        gt_scraper = GlobalTimesScraper(translate_immediately=False)
+        # Check if we're in production (Railway) environment
+        is_production = bool(os.getenv('DATABASE_URL'))
+        
+        # Initialize all scrapers - enable translation in production
+        pd_scraper = PeoplesDailyScraper(translate_immediately=is_production)
+        paper_scraper = PaperScraper(translate_immediately=is_production)
+        sc_scraper = StateCouncilScraper(translate_immediately=is_production)
+        nbs_scraper = NBSScraper(translate_immediately=is_production)
+        tao_scraper = TaiwanAffairsScraper(translate_immediately=is_production)
+        mnd_scraper = MNDScraper(translate_immediately=is_production)
+        guancha_scraper = GuanchaScraper(translate_immediately=is_production)
+        gt_scraper = GlobalTimesScraper(translate_immediately=is_production)
         
         # Fetch articles from all sources
         pd_articles = pd_scraper.fetch_news_by_date(date_obj)
