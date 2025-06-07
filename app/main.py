@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -44,9 +43,24 @@ app.include_router(content_router)
 # Include category management router
 app.include_router(category_router)
 
-# Configure templates and static files
-templates = Jinja2Templates(directory="app/templates")
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# Try to configure templates - fail gracefully if jinja2 not available
+templates = None
+try:
+    from fastapi.templating import Jinja2Templates
+    templates = Jinja2Templates(directory="app/templates")
+    logger.info("✅ Templates initialized successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Templates not available: {e}")
+    logger.warning("HTML routes will not work, but API routes will function normally")
+except Exception as e:
+    logger.warning(f"⚠️ Template initialization failed: {e}")
+
+# Mount static files if directory exists
+try:
+    app.mount("/static", StaticFiles(directory="app/static"), name="static")
+    logger.info("✅ Static files mounted successfully")
+except Exception as e:
+    logger.warning(f"⚠️ Static files not available: {e}")
 
 # Configure CORS
 app.add_middleware(

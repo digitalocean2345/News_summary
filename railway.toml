@@ -1,8 +1,10 @@
 [build]
 builder = "nixpacks"
+buildCommand = "pip install --no-cache-dir -r requirements.txt && pip list | grep -i jinja"
 
 [deploy]
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+startCommand = "uvicorn main_api_only:app --host 0.0.0.0 --port $PORT"
 
 [env]
-PYTHONPATH = "/app" 
+PYTHONPATH = "/app"
+PYTHONUNBUFFERED = "1" 
