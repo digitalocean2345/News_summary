@@ -31,6 +31,14 @@ else:
         max_overflow=10      # Maximum overflow connections
     )
 
+# Create tables automatically when the module is imported
+try:
+    from app.models.models import Base
+    Base.metadata.create_all(bind=engine)
+    print("✅ Database tables created/verified successfully")
+except Exception as e:
+    print(f"⚠️ Table creation failed: {e}")
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db():
