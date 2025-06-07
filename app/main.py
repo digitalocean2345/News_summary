@@ -21,7 +21,7 @@ import logging
 from datetime import datetime, timedelta
 import calendar
 from fastapi.responses import HTMLResponse, JSONResponse
-from typing import List, Dict
+from typing import List, Dict, Optional
 from app.services.translator import MicrosoftTranslator
 import os
 from sqlalchemy import text
@@ -719,6 +719,77 @@ async def get_categories(db: Session = Depends(get_db)):
         logger.error(f"Error getting categories: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@app.get("/api/categories/stats")
+async def get_categories_stats(db: Session = Depends(get_db)):
+    """Get comment counts for all categories"""
+    try:
+        categories = db.query(Category).all()
+        stats = []
+        
+        for category in categories:
+            comment_count = db.query(Comment).filter(Comment.category_id == category.id).count()
+            stats.append({
+                "category_id": category.id,
+                "category_name": category.name,
+                "comment_count": comment_count
+            })
+        
+        return stats
+    except Exception as e:
+        logger.error(f"Error getting category stats: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/comments", response_model=List[schemas.CommentResponse])
+async def get_all_comments(
+    category: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Get all comments, optionally filtered by category"""
+    try:
+        query = db.query(Comment)
+        
+        # Filter by category if specified
+        if category:
+            if category == "null" or category == "uncategorized":
+                query = query.filter(Comment.category_id.is_(None))
+            else:
+                try:
+                    category_id = int(category)
+                    query = query.filter(Comment.category_id == category_id)
+                except ValueError:
+                    raise HTTPException(status_code=400, detail="Invalid category parameter")
+        
+        comments = query.all()
+        
+        result = []
+        for comment in comments:
+            # Get news info
+            news = db.query(News).filter(News.id == comment.news_id).first()
+            
+            # Get category info if exists
+            category_obj = None
+            if comment.category_id:
+                category_obj = db.query(Category).filter(Category.id == comment.category_id).first()
+            
+            result.append(schemas.CommentResponse(
+                id=comment.id,
+                news_id=comment.news_id,
+                comment_text=comment.comment_text,
+                category_id=comment.category_id,
+                category_name=category_obj.name if category_obj else None,
+                user_name=comment.user_name,
+                created_at=comment.created_at,
+                news_title=news.title if news else "Unknown",
+                news_title_english=news.title_english if news else None,
+                news_url=news.source_url if news else ""
+            ))
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error getting all comments: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/sources", response_class=HTMLResponse)
 async def sources_view(request: Request):
     """Display all available sources organized by tabs and subtabs"""
@@ -1066,6 +1137,26 @@ async def comments_by_category_view(
         
     except Exception as e:
         logger.error(f"Error in category comments view: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/categories", response_class=HTMLResponse)
+async def categories_view(request: Request, db: Session = Depends(get_db)):
+    """Categories and comments management page"""
+    try:
+        # Get all categories
+        categories = db.query(Category).all()
+        
+        # Get current date for navigation
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        
+        return templates.TemplateResponse("categories.html", {
+            "request": request,
+            "categories": categories,
+            "current_date": current_date
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in categories view: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Health check endpoint for monitoring and GitHub Actions

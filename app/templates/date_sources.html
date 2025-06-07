@@ -157,6 +157,16 @@
             font-style: italic;
             line-height: 1.4;
             margin-bottom: 10px;
+            display: block !important;
+        }
+
+        .title-english.hidden {
+            display: none !important;
+        }
+
+        .title-english.placeholder {
+            opacity: 0.6;
+            font-style: italic;
         }
 
         .article-meta {
@@ -180,6 +190,62 @@
             padding: 15px 20px;
             text-align: center;
             margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stats-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .ui-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+
+        .ui-mode-toggle label {
+            font-size: 14px;
+            color: white;
+            margin: 0;
+        }
+
+        .ui-mode-toggle input[type="checkbox"] {
+            width: 40px;
+            height: 20px;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .ui-mode-toggle input[type="checkbox"]:checked {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .ui-mode-toggle input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .ui-mode-toggle input[type="checkbox"]:checked::before {
+            left: 22px;
+            background: var(--primary-color);
         }
 
         .empty-section {
@@ -225,6 +291,11 @@
             .title-english {
                 font-size: 13px;
             }
+
+            .stats-banner {
+                flex-direction: column;
+                gap: 15px;
+            }
         }
     </style>
 </head>
@@ -240,11 +311,18 @@
             <a href="/" class="nav-tab">📅 Calendar</a>
             <a href="#" class="nav-tab active">📰 Headlines</a>
             <a href="/sources" class="nav-tab">🔗 Sources</a>
+            <a href="/comments" class="nav-tab">💬 Comments</a>
         </div>
 
-        <!-- Stats Banner -->
+        <!-- Stats Banner with UI Mode Toggle -->
         <div class="stats-banner">
-            <strong>{{ total_articles }}</strong> headlines found from <strong>{{ organized_news|length }}</strong> sources on {{ selected_date }}
+            <div class="stats-info">
+                <span><strong>{{ total_articles }}</strong> headlines found from <strong>{{ organized_news|length }}</strong> sources on {{ selected_date }}</span>
+            </div>
+            <div class="ui-mode-toggle">
+                <label for="ui-mode-checkbox">Show English</label>
+                <input type="checkbox" id="ui-mode-checkbox" checked onchange="toggleUIMode()">
+            </div>
         </div>
 
         <!-- Main Content -->
@@ -329,9 +407,13 @@
                                                         <div class="news-item">
                                                             <a href="/article/{{ article.id }}">
                                                                 <div class="title-chinese">{{ article.title }}</div>
-                                                                {% if article.title_english %}
-                                                                    <div class="title-english">{{ article.title_english }}</div>
-                                                                {% endif %}
+                                                                <div class="title-english" id="english-{{ article.id }}">
+                                                                    {% if article.title_english %}
+                                                                        {{ article.title_english }}
+                                                                    {% else %}
+                                                                        <span class="placeholder">English translation not available</span>
+                                                                    {% endif %}
+                                                                </div>
                                                                 <div class="article-meta">
                                                                     <div class="meta-item">
                                                                         📅 {{ article.collection_date.strftime('%Y-%m-%d') }}
@@ -392,6 +474,34 @@
     </div>
 
     <script>
+        // UI Mode Toggle Function
+        function toggleUIMode() {
+            const checkbox = document.getElementById('ui-mode-checkbox');
+            const englishTitles = document.querySelectorAll('.title-english');
+            
+            englishTitles.forEach(function(element) {
+                if (checkbox.checked) {
+                    element.classList.remove('hidden');
+                } else {
+                    element.classList.add('hidden');
+                }
+            });
+            
+            // Save preference in localStorage
+            localStorage.setItem('showEnglish', checkbox.checked);
+        }
+
+        // Load saved preference on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedPreference = localStorage.getItem('showEnglish');
+            const checkbox = document.getElementById('ui-mode-checkbox');
+            
+            if (savedPreference !== null) {
+                checkbox.checked = savedPreference === 'true';
+                toggleUIMode();
+            }
+        });
+
         function showMainTab(evt, tabName) {
             // Hide all main tab contents
             var tabContents = document.getElementsByClassName("tab-content");
@@ -444,6 +554,13 @@
                 var firstSubtab = document.querySelector('#' + tabName + ' .subtab');
                 if (firstSubtab) {
                     firstSubtab.classList.add('active');
+                    // Also set the corresponding subtab content as active
+                    var sectionName = firstSubtab.getAttribute('onclick').match(/'([^']*)', '([^']*)'/)[2];
+                    var subtabContentId = tabName + '_' + sectionName;
+                    var subtabContent = document.getElementById(subtabContentId);
+                    if (subtabContent) {
+                        subtabContent.classList.add('active');
+                    }
                 }
             }
         });
