@@ -1071,28 +1071,55 @@ async def comments_by_category_view(
 # Health check endpoint for monitoring and GitHub Actions
 @app.get("/health")
 async def health_check(db: Session = Depends(get_db)):
-    """Health check endpoint for monitoring and deployment verification"""
+    """Health check endpoint"""
     try:
-        # Test database connection
-        db.execute(text("SELECT 1"))
-        
-        # Get basic stats
-        news_count = db.query(News).count()
+        # Test database connection by counting news articles
+        result = db.execute(text("SELECT COUNT(*) FROM news"))
+        count = result.scalar()
         
         return {
             "status": "healthy",
             "timestamp": datetime.now().isoformat(),
-            "service": "news-aggregator",
+            "service": "news-aggregator-api",
             "database": "connected",
-            "total_articles": news_count,
-            "version": "2.0.0"
+            "articles_count": count
         }
     except Exception as e:
         return {
             "status": "unhealthy",
             "timestamp": datetime.now().isoformat(),
-            "service": "news-aggregator",
+            "service": "news-aggregator-api",
             "database": "disconnected",
             "error": str(e)
         }
+
+@app.post("/api/admin/init-database")
+async def initialize_database():
+    """Initialize database tables - creates all tables if they don't exist"""
+    try:
+        from app.database import engine
+        from app.models.models import Base
+        
+        # Create all tables
+        Base.metadata.create_all(bind=engine)
+        
+        # Verify tables were created
+        with engine.connect() as conn:
+            result = conn.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public'
+                ORDER BY table_name
+            """))
+            tables = [row[0] for row in result.fetchall()]
+        
+        return {
+            "message": "Database initialized successfully",
+            "tables_created": tables,
+            "status": "success"
+        }
+        
+    except Exception as e:
+        logger.error(f"Database initialization failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database initialization failed: {str(e)}")
 
