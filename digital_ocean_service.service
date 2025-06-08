@@ -1,0 +1,23 @@
+[Unit]
+Description=News Summary FastAPI Application
+After=network.target
+
+[Service]
+Type=notify
+User=deployer
+Group=www-data
+WorkingDirectory=/var/www/news_summary
+Environment="PATH=/var/www/news_summary/venv/bin"
+Environment="ENVIRONMENT=production"
+Environment="PYTHONPATH=/var/www/news_summary"
+ExecStartPre=/bin/bash -c 'mkdir -p /var/www/news_summary && chown deployer:www-data /var/www/news_summary'
+ExecStart=/var/www/news_summary/venv/bin/gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 127.0.0.1:8000
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=false
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target 
