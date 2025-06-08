@@ -256,7 +256,87 @@ sudo tail -f /var/log/nginx/error.log
 systemctl status news-summary.service
 ```
 
-## Step 13: Deployment Script for Updates
+## Step 13: Setup Automated News Scraping
+
+Create automated scraping to run at 6 AM and 6 PM daily:
+
+```bash
+# Create logs directory
+mkdir -p /var/www/news_summary/logs
+chmod 755 /var/www/news_summary/logs
+
+# Make the scraper script executable
+chmod +x /var/www/news_summary/automated_scraper.py
+
+# Create a wrapper script for cron (needed for environment variables)
+cat > /var/www/news_summary/cron_scraper.sh << 'EOF'
+#!/bin/bash
+# Cron wrapper for automated scraper
+
+# Set environment variables
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+export PYTHONPATH="/var/www/news_summary:/var/www/news_summary/app"
+
+# Change to project directory
+cd /var/www/news_summary
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Run the scraper
+python3 automated_scraper.py
+
+# Log completion
+echo "$(date): Automated scraping job completed" >> /var/www/news_summary/logs/cron.log
+EOF
+
+# Make the cron wrapper executable
+chmod +x /var/www/news_summary/cron_scraper.sh
+```
+
+Add cron jobs for automated scraping:
+```bash
+# Add cron jobs for 6 AM and 6 PM daily
+(crontab -l 2>/dev/null; echo "# Automated News Scraping - 6 AM daily") | crontab -
+(crontab -l 2>/dev/null; echo "0 6 * * * /var/www/news_summary/cron_scraper.sh >> /var/www/news_summary/logs/cron.log 2>&1") | crontab -
+
+(crontab -l 2>/dev/null; echo "# Automated News Scraping - 6 PM daily") | crontab -
+(crontab -l 2>/dev/null; echo "0 18 * * * /var/www/news_summary/cron_scraper.sh >> /var/www/news_summary/logs/cron.log 2>&1") | crontab -
+
+# Verify cron jobs were added
+crontab -l
+```
+
+Test the automated scraper manually:
+```bash
+cd /var/www/news_summary
+./cron_scraper.sh
+```
+
+Monitor scraping logs:
+```bash
+# View scraper logs
+tail -f /var/www/news_summary/logs/scraper.log
+
+# View cron execution logs
+tail -f /var/www/news_summary/logs/cron.log
+```
+
+## Step 14: Monitoring and Logs
+
+```bash
+# View application logs
+sudo journalctl -u news-summary.service -f
+
+# View nginx logs
+sudo tail -f /var/log/nginx/access.log
+sudo tail -f /var/log/nginx/error.log
+
+# Check application status
+systemctl status news-summary.service
+```
+
+## Step 15: Deployment Script for Updates
 
 Create an update script:
 ```bash
@@ -291,7 +371,7 @@ Make it executable:
 chmod +x /var/www/news_summary/deploy.sh
 ```
 
-## Testing Your Deployment
+## Step 16: Testing Your Deployment
 
 1. **Basic Health Check:**
    ```bash
@@ -306,7 +386,13 @@ chmod +x /var/www/news_summary/deploy.sh
 3. **Web Interface:**
    Visit `http://your_domain.com` in your browser
 
-## Troubleshooting
+4. **Test Automated Scraping:**
+   ```bash
+   cd /var/www/news_summary
+   ./cron_scraper.sh
+   ```
+
+## Step 17: Troubleshooting
 
 1. **Check service status:**
    ```bash
@@ -328,7 +414,18 @@ chmod +x /var/www/news_summary/deploy.sh
    ls -la news_aggregator.db
    ```
 
-## Security Considerations
+5. **Check cron jobs:**
+   ```bash
+   crontab -l
+   ```
+
+6. **Check scraping logs:**
+   ```bash
+   tail -f /var/www/news_summary/logs/scraper.log
+   tail -f /var/www/news_summary/logs/cron.log
+   ```
+
+## Step 18: Security Considerations
 
 1. **Regular Updates:**
    ```bash
@@ -340,7 +437,7 @@ chmod +x /var/www/news_summary/deploy.sh
 4. **Consider fail2ban for SSH protection**
 5. **Regular database backups**
 
-## Performance Optimization
+## Step 19: Performance Optimization
 
 1. **For high traffic, consider:**
    - Increasing gunicorn workers
@@ -359,4 +456,11 @@ Your application will be accessible at:
 - HTTP: `http://your_domain.com` or `http://your_droplet_ip`
 - HTTPS: `https://your_domain.com` (if SSL configured)
 
-The SQLite database will persist on the droplet's filesystem, solving the persistence issue you had with GCP. 
+The SQLite database will persist on the droplet's filesystem, solving the persistence issue you had with GCP.
+
+**Automated News Scraping:**
+- Runs automatically at 6:00 AM and 6:00 PM daily (UTC)
+- Scrapes from all 8 news sources (People's Daily, The Paper, State Council, NBS, Taiwan Affairs, MND, Guancha, Global Times)
+- Automatically translates Chinese content to English
+- Logs all activity to `/var/www/news_summary/logs/scraper.log`
+- Prevents duplicate articles from being added to the database 
