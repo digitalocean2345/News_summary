@@ -56,6 +56,7 @@ def initialize_database():
     try:
         from app.database import engine
         from app.models.models import Base
+        from sqlalchemy import text
         
         # Create all tables
         Base.metadata.create_all(bind=engine)
@@ -63,13 +64,62 @@ def initialize_database():
         
         # Test connection
         with engine.connect() as conn:
-            result = conn.execute("SELECT COUNT(*) FROM news")
+            result = conn.execute(text("SELECT COUNT(*) FROM news"))
             count = result.scalar()
             print(f"✅ Database connection verified - {count} articles found")
         
         return True
     except Exception as e:
         print(f"❌ Database initialization failed: {e}")
+        return False
+
+def optimize_for_small_droplet():
+    """Optimize systemd service for 512MB droplet"""
+    print("\n🔧 Optimizing service for small droplet...")
+    
+    service_content = """[Unit]
+Description=News Summary FastAPI Application
+After=network.target
+
+[Service]
+Type=forking
+User=deployer
+Group=deployer
+WorkingDirectory=/var/www/news_summary
+Environment=PATH=/var/www/news_summary/venv/bin
+# Reduced to 1 worker to prevent OOM on 512MB droplet
+ExecStart=/var/www/news_summary/venv/bin/gunicorn app.main:app -w 1 -k uvicorn.workers.UvicornWorker --bind 127.0.0.1:8000 --daemon
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=always
+RestartSec=10
+
+# Memory limits for 512MB droplet
+MemoryAccounting=yes
+MemoryMax=400M
+MemoryHigh=350M
+
+[Install]
+WantedBy=multi-user.target
+"""
+    
+    try:
+        # Write the optimized service file
+        with open('/tmp/news-summary.service', 'w') as f:
+            f.write(service_content)
+        
+        # Copy to systemd directory
+        subprocess.run(['sudo', 'cp', '/tmp/news-summary.service', '/etc/systemd/system/'], check=True)
+        
+        # Reload systemd
+        subprocess.run(['sudo', 'systemctl', 'daemon-reload'], check=True)
+        
+        print("✅ Service optimized for 512MB droplet (1 worker instead of 4)")
+        return True
+    except Exception as e:
+        print(f"❌ Service optimization failed: {e}")
         return False
 
 def restart_service():
@@ -103,13 +153,13 @@ def test_endpoints():
     print("\n🔍 Testing endpoints...")
     
     import time
-    time.sleep(3)  # Wait for service to start
+    time.sleep(5)  # Wait longer for service to start with 1 worker
     
     try:
         import requests
         
         # Test health endpoint
-        response = requests.get('http://127.0.0.1:8000/health', timeout=10)
+        response = requests.get('http://127.0.0.1:8000/health', timeout=15)
         if response.status_code == 200:
             print("✅ Health endpoint working")
             print(f"   Response: {response.json()}")
@@ -120,7 +170,7 @@ def test_endpoints():
         print("⚠️ Requests library not available, using curl instead")
         try:
             result = subprocess.run(['curl', '-s', 'http://127.0.0.1:8000/health'], 
-                                  capture_output=True, text=True, timeout=10)
+                                  capture_output=True, text=True, timeout=15)
             if result.returncode == 0 and result.stdout:
                 print("✅ Health endpoint working")
                 print(f"   Response: {result.stdout}")
@@ -131,6 +181,25 @@ def test_endpoints():
             print(f"❌ Could not test endpoint: {e}")
     except Exception as e:
         print(f"❌ Endpoint test failed: {e}")
+
+def check_memory_usage():
+    """Check current memory usage"""
+    print("\n📊 Checking memory usage...")
+    try:
+        result = subprocess.run(['free', '-h'], capture_output=True, text=True)
+        if result.returncode == 0:
+            print("Memory usage:")
+            print(result.stdout)
+        
+        # Check if any processes were killed
+        result = subprocess.run(['dmesg', '|', 'grep', '-i', 'killed'], 
+                              shell=True, capture_output=True, text=True)
+        if result.stdout:
+            print("\n⚠️ Recent OOM kills:")
+            print(result.stdout[-500:])  # Last 500 chars
+            
+    except Exception as e:
+        print(f"❌ Could not check memory: {e}")
 
 def check_logs():
     """Check recent service logs"""
@@ -148,40 +217,47 @@ def check_logs():
 
 def main():
     """Main fix function"""
-    print("🛠️  News Summary Deployment Fix Script")
-    print("=" * 50)
+    print("🛠️  News Summary Deployment Fix Script (512MB Droplet Optimized)")
+    print("=" * 70)
     
     # Change to the correct directory
     if os.path.exists('/var/www/news_summary'):
         os.chdir('/var/www/news_summary')
         print("✅ Changed to /var/www/news_summary")
     
-    # Step 1: Stop existing processes
+    # Step 1: Check memory usage first
+    check_memory_usage()
+    
+    # Step 2: Stop existing processes
     kill_gunicorn_processes()
     
-    # Step 2: Check database
+    # Step 3: Check database
     db_path = check_database_file()
     
-    # Step 3: Initialize database if found
+    # Step 4: Initialize database if found
     if db_path:
         initialize_database()
     
-    # Step 4: Restart service
+    # Step 5: Optimize service for small droplet
+    optimize_for_small_droplet()
+    
+    # Step 6: Restart service
     restart_service()
     
-    # Step 5: Test endpoints
+    # Step 7: Test endpoints
     test_endpoints()
     
-    # Step 6: Show logs
+    # Step 8: Show logs
     check_logs()
     
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 70)
     print("🏁 Fix script completed!")
     print("\n💡 Manual checks you can do:")
     print("1. curl http://127.0.0.1:8000/health")
     print("2. sudo systemctl status news-summary")
     print("3. sudo journalctl -u news-summary -f")
     print("4. lsof -i :8000")
+    print("5. free -h  # Check memory usage")
 
 if __name__ == "__main__":
     main() 

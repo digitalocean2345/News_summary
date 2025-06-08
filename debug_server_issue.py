@@ -27,10 +27,11 @@ def test_database_connection():
     print("\n🔍 Testing database connection...")
     try:
         from app.database import SessionLocal, engine
+        from sqlalchemy import text
         
         # Test engine connection
         with engine.connect() as conn:
-            result = conn.execute("SELECT COUNT(*) FROM news")
+            result = conn.execute(text("SELECT COUNT(*) FROM news"))
             count = result.scalar()
             print(f"✅ Database connected - found {count} news articles")
             return True
