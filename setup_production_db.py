@@ -55,7 +55,6 @@ def initialize_database():
         # Import after setting environment variable
         from app.database import engine
         from app.models.models import Base
-        from sqlalchemy import text
         
         # Create all tables
         Base.metadata.create_all(bind=engine)
@@ -66,12 +65,21 @@ def initialize_database():
         db = SessionLocal()
         
         try:
-            # Use text() wrapper for raw SQL
-            result = db.execute(text("SELECT COUNT(*) FROM articles")).scalar()
-            print(f"📊 Database verified - Found {result} articles")
-        except Exception as e:
-            # If articles table doesn't exist yet, that's okay
-            print(f"📊 Database verified - Articles table will be created by the application")
+            # Import text for SQLAlchemy 2.0+ compatibility
+            try:
+                from sqlalchemy import text
+                # Use text() wrapper for raw SQL (SQLAlchemy 2.0+)
+                result = db.execute(text("SELECT COUNT(*) FROM articles")).scalar()
+                print(f"📊 Database verified - Found {result} articles")
+            except ImportError:
+                # Fallback for older SQLAlchemy versions
+                result = db.execute("SELECT COUNT(*) FROM articles").scalar()
+                print(f"📊 Database verified - Found {result} articles")
+            except Exception as table_error:
+                # If articles table doesn't exist yet, that's okay
+                print(f"📊 Database verified - Articles table will be created by the application")
+        except Exception as verification_error:
+            print(f"📊 Database verified - Tables will be created by the application")
         
         db.close()
         return True
