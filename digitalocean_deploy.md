@@ -92,8 +92,8 @@ print('✅ Database tables created successfully')
 "
 
 # Set proper permissions for database
-chmod 664 news_aggregator.db
-sudo chown deployer:www-data news_aggregator.db
+chmod 664 news.db
+sudo chown deployer:www-data news.db
 ```
 
 ## Step 6: Create Systemd Service
