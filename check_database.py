@@ -39,7 +39,7 @@ def check_database():
             
             # If there are articles, show a sample
             if count > 0:
-                result = conn.execute(text("SELECT title, date, source FROM news LIMIT 3"))
+                result = conn.execute(text("SELECT title, collection_date, source_domain FROM news LIMIT 3"))
                 articles = result.fetchall()
                 print(f"\n📰 Sample articles:")
                 for i, article in enumerate(articles, 1):
@@ -47,7 +47,7 @@ def check_database():
             
             # Check date range
             if count > 0:
-                result = conn.execute(text("SELECT MIN(date), MAX(date) FROM news"))
+                result = conn.execute(text("SELECT MIN(collection_date), MAX(collection_date) FROM news"))
                 date_range = result.fetchone()
                 print(f"📅 Date range: {date_range[0]} to {date_range[1]}")
             
@@ -61,10 +61,10 @@ def check_recent_dates():
     try:
         with engine.connect() as conn:
             result = conn.execute(text("""
-                SELECT date, COUNT(*) as article_count 
+                SELECT collection_date, COUNT(*) as article_count 
                 FROM news 
-                GROUP BY date 
-                ORDER BY date DESC 
+                GROUP BY collection_date 
+                ORDER BY collection_date DESC 
                 LIMIT 10
             """))
             dates = result.fetchall()
