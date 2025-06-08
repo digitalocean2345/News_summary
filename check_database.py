@@ -1,36 +1,90 @@
-from app.database import get_db
-from app.models.models import News
-from sqlalchemy.orm import Session
-from datetime import datetime
+#!/usr/bin/env python3
+"""
+Check server database content and structure
+"""
 
-# Get database session
-db = next(get_db())
+import os
+import sys
+sys.path.insert(0, '/var/www/news_summary')
 
-# Check for the specific date
-date_obj = datetime.strptime('2025-05-31', '%Y-%m-%d').date()
-news_items = db.query(News).filter(News.collection_date == date_obj).all()
+from app.database import engine
+from sqlalchemy import text
 
-print(f"Total articles for 2025-05-31: {len(news_items)}")
-
-# Group by domain
-domains = {}
-for item in news_items:
-    url = item.source_url
-    if '//' in url:
-        domain = url.split('//')[1].split('/')[0]
-    else:
-        domain = 'unknown'
+def check_database():
+    """Check database file, structure, and content"""
+    print("🔍 Checking server database...")
     
-    if domain not in domains:
-        domains[domain] = []
-    domains[domain].append(url)
+    # Check database file
+    db_path = 'news.db'
+    if os.path.exists(db_path):
+        size = os.path.getsize(db_path)
+        print(f"✅ Database file exists: {size} bytes")
+    else:
+        print("❌ Database file missing")
+        return
+    
+    try:
+        with engine.connect() as conn:
+            # Check news table
+            result = conn.execute(text("SELECT COUNT(*) FROM news"))
+            count = result.scalar()
+            print(f"📊 News articles: {count}")
+            
+            # Check table structure
+            result = conn.execute(text("PRAGMA table_info(news)"))
+            columns = result.fetchall()
+            print(f"📋 Table columns ({len(columns)}):")
+            for col in columns:
+                print(f"  - {col[1]} ({col[2]})")
+            
+            # If there are articles, show a sample
+            if count > 0:
+                result = conn.execute(text("SELECT title, date, source FROM news LIMIT 3"))
+                articles = result.fetchall()
+                print(f"\n📰 Sample articles:")
+                for i, article in enumerate(articles, 1):
+                    print(f"  {i}. {article[0][:50]}... ({article[1]}) - {article[2]}")
+            
+            # Check date range
+            if count > 0:
+                result = conn.execute(text("SELECT MIN(date), MAX(date) FROM news"))
+                date_range = result.fetchone()
+                print(f"📅 Date range: {date_range[0]} to {date_range[1]}")
+            
+    except Exception as e:
+        print(f"❌ Database check failed: {e}")
 
-print("\nDomains and counts:")
-for domain, urls in domains.items():
-    print(f"  {domain}: {len(urls)} articles")
+def check_recent_dates():
+    """Check what dates have articles"""
+    print("\n🔍 Checking available dates...")
+    
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text("""
+                SELECT date, COUNT(*) as article_count 
+                FROM news 
+                GROUP BY date 
+                ORDER BY date DESC 
+                LIMIT 10
+            """))
+            dates = result.fetchall()
+            
+            if dates:
+                print("📅 Recent dates with articles:")
+                for date, count in dates:
+                    print(f"  - {date}: {count} articles")
+            else:
+                print("❌ No dates found with articles")
+                
+    except Exception as e:
+        print(f"❌ Date check failed: {e}")
 
-# Show sample People's Daily URLs
-peoples_daily_urls = domains.get('world.people.com.cn', [])
-print(f"\nSample world.people.com.cn URLs ({len(peoples_daily_urls)} total):")
-for i, url in enumerate(peoples_daily_urls[:10]):
-    print(f"  {i+1}. {url}") 
+if __name__ == "__main__":
+    print("🔍 Server Database Analysis")
+    print("=" * 40)
+    check_database()
+    check_recent_dates()
+    
+    print("\n💡 If database is empty, you need to:")
+    print("1. Transfer your local database to server, OR")
+    print("2. Run the news scraping/population scripts on server") 
