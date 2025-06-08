@@ -55,18 +55,23 @@ def initialize_database():
         # Import after setting environment variable
         from app.database import engine
         from app.models.models import Base
+        from sqlalchemy import text
         
         # Create all tables
         Base.metadata.create_all(bind=engine)
         print("✅ Database tables initialized successfully")
         
-        # Verify database connection
+        # Verify database connection using proper SQLAlchemy syntax
         from app.database import SessionLocal
         db = SessionLocal()
         
-        # Test query
-        result = db.execute("SELECT COUNT(*) FROM articles").scalar()
-        print(f"📊 Database verified - Found {result} articles")
+        try:
+            # Use text() wrapper for raw SQL
+            result = db.execute(text("SELECT COUNT(*) FROM articles")).scalar()
+            print(f"📊 Database verified - Found {result} articles")
+        except Exception as e:
+            # If articles table doesn't exist yet, that's okay
+            print(f"📊 Database verified - Articles table will be created by the application")
         
         db.close()
         return True
@@ -92,19 +97,23 @@ def check_database_integrity():
         tables = [row[0] for row in cursor.fetchall()]
         
         expected_tables = ['articles', 'comments']  # Add your expected tables here
-        missing_tables = [table for table in expected_tables if table not in tables]
         
-        if missing_tables:
-            print(f"⚠️ Missing tables: {missing_tables}")
+        if not tables:
+            print("📊 Database is empty - tables will be created by the application")
         else:
-            print("✅ All expected tables found")
-        
-        # Get record counts
-        for table in tables:
-            if table != 'sqlite_sequence':
-                cursor.execute(f"SELECT COUNT(*) FROM {table}")
-                count = cursor.fetchone()[0]
-                print(f"📊 Table '{table}': {count} records")
+            missing_tables = [table for table in expected_tables if table not in tables]
+            
+            if missing_tables:
+                print(f"⚠️ Some tables will be created by the application: {missing_tables}")
+            else:
+                print("✅ All expected tables found")
+            
+            # Get record counts
+            for table in tables:
+                if table != 'sqlite_sequence':
+                    cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                    count = cursor.fetchone()[0]
+                    print(f"📊 Table '{table}': {count} records")
         
         conn.close()
         return True

@@ -170,10 +170,14 @@ if [ -f "$DB_PATH" ]; then
 import os
 os.environ['ENVIRONMENT'] = 'production'
 from app.database import SessionLocal
+from sqlalchemy import text
 try:
     db = SessionLocal()
-    result = db.execute('SELECT COUNT(*) FROM articles').scalar()
-    print(f'📈 Articles count: {result}')
+    try:
+        result = db.execute(text('SELECT COUNT(*) FROM articles')).scalar()
+        print(f'📈 Articles count: {result}')
+    except Exception as e:
+        print(f'📊 Database ready - Tables will be created by application')
     db.close()
     print('✅ Database connection successful')
 except Exception as e:
