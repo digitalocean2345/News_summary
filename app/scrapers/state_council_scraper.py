@@ -115,7 +115,23 @@ class StateCouncilScraper(BaseScraper):
                         elif "mofcom.gov.cn" in url:
                             href = f"https://www.mofcom.gov.cn{href}"
                         elif "gov.cn" in url:
-                            href = f"https://www.gov.cn{href}"
+                            # Handle relative URLs starting with './'
+                            if href.startswith('./'):
+                                # Remove the './' and use the base URL of the current page
+                                href = href[2:]  # Remove './'
+                                # Extract the base path from the current URL
+                                if '/lianbo/bumen/' in url:
+                                    href = f"https://www.gov.cn/lianbo/bumen/{href}"
+                                elif '/lianbo/fabu/' in url:
+                                    href = f"https://www.gov.cn/lianbo/fabu/{href}"
+                                elif '/lianbo/difang/' in url:
+                                    href = f"https://www.gov.cn/lianbo/difang/{href}"
+                                elif '/lianbo/' in url:
+                                    href = f"https://www.gov.cn/lianbo/{href}"
+                                else:
+                                    href = f"https://www.gov.cn{href}"
+                            else:
+                                href = f"https://www.gov.cn{href}"
                     
                     article = {
                         'title': title,
@@ -231,7 +247,23 @@ class StateCouncilScraper(BaseScraper):
                                 elif "mofcom.gov.cn" in section_url:
                                     href = f"https://www.mofcom.gov.cn{href}"
                                 elif "gov.cn" in section_url:
-                                    href = f"https://www.gov.cn{href}"
+                                    # Handle relative URLs starting with './'
+                                    if href.startswith('./'):
+                                        # Remove the './' and use the base URL of the current page
+                                        href = href[2:]  # Remove './'
+                                        # Extract the base path from the current URL
+                                        if '/lianbo/bumen/' in section_url:
+                                            href = f"https://www.gov.cn/lianbo/bumen/{href}"
+                                        elif '/lianbo/fabu/' in section_url:
+                                            href = f"https://www.gov.cn/lianbo/fabu/{href}"
+                                        elif '/lianbo/difang/' in section_url:
+                                            href = f"https://www.gov.cn/lianbo/difang/{href}"
+                                        elif '/lianbo/' in section_url:
+                                            href = f"https://www.gov.cn/lianbo/{href}"
+                                        else:
+                                            href = f"https://www.gov.cn{href}"
+                                    else:
+                                        href = f"https://www.gov.cn{href}"
                             
                             news_item = {
                                 'title': title,
