@@ -115,7 +115,7 @@ class StateCouncilScraper(BaseScraper):
                         elif "mofcom.gov.cn" in url:
                             href = f"https://www.mofcom.gov.cn{href}"
                         elif "gov.cn" in url:
-                            # Handle relative URLs starting with './'
+                            # Handle relative URLs starting with './' or '../'
                             if href.startswith('./'):
                                 # Remove the './' and use the base URL of the current page
                                 href = href[2:]  # Remove './'
@@ -128,6 +128,17 @@ class StateCouncilScraper(BaseScraper):
                                     href = f"https://www.gov.cn/lianbo/difang/{href}"
                                 elif '/lianbo/' in url:
                                     href = f"https://www.gov.cn/lianbo/{href}"
+                                else:
+                                    href = f"https://www.gov.cn{href}"
+                            elif href.startswith('../'):
+                                # Remove the '../' and go up one directory from current URL
+                                href = href[3:]  # Remove '../'
+                                if '/zhengce/jiedu/' in url:
+                                    href = f"https://www.gov.cn/zhengce/{href}"
+                                elif '/zhengce/zuixin/' in url:
+                                    href = f"https://www.gov.cn/zhengce/{href}"
+                                elif '/toutiao/liebiao/' in url:
+                                    href = f"https://www.gov.cn/toutiao/{href}"
                                 else:
                                     href = f"https://www.gov.cn{href}"
                             else:
@@ -247,7 +258,7 @@ class StateCouncilScraper(BaseScraper):
                                 elif "mofcom.gov.cn" in section_url:
                                     href = f"https://www.mofcom.gov.cn{href}"
                                 elif "gov.cn" in section_url:
-                                    # Handle relative URLs starting with './'
+                                    # Handle relative URLs starting with './' or '../'
                                     if href.startswith('./'):
                                         # Remove the './' and use the base URL of the current page
                                         href = href[2:]  # Remove './'
@@ -260,6 +271,17 @@ class StateCouncilScraper(BaseScraper):
                                             href = f"https://www.gov.cn/lianbo/difang/{href}"
                                         elif '/lianbo/' in section_url:
                                             href = f"https://www.gov.cn/lianbo/{href}"
+                                        else:
+                                            href = f"https://www.gov.cn{href}"
+                                    elif href.startswith('../'):
+                                        # Remove the '../' and go up one directory from current URL
+                                        href = href[3:]  # Remove '../'
+                                        if '/zhengce/jiedu/' in section_url:
+                                            href = f"https://www.gov.cn/zhengce/{href}"
+                                        elif '/zhengce/zuixin/' in section_url:
+                                            href = f"https://www.gov.cn/zhengce/{href}"
+                                        elif '/toutiao/liebiao/' in section_url:
+                                            href = f"https://www.gov.cn/toutiao/{href}"
                                         else:
                                             href = f"https://www.gov.cn{href}"
                                     else:
