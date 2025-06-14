@@ -1,6 +1,0 @@
-runtime: python311
-
-entrypoint: gunicorn -k uvicorn.workers.UvicornWorker --bind :$PORT minimal_test:app
-
-env_variables:
-  ENVIRONMENT: production 
