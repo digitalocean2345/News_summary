@@ -954,7 +954,7 @@ async def get_comments_by_category(category_id: int, db: Session = Depends(get_d
             raise HTTPException(status_code=404, detail="Category not found")
         
         # Get comments with news info
-        comments = db.query(Comment).filter(Comment.category_id == category_id).all()
+        comments = db.query(Comment).filter(Comment.category_id == category_id).order_by(Comment.created_at.desc()).all()
         
         result = []
         for comment in comments:
@@ -1124,7 +1124,7 @@ async def comments_by_category_view(
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
         
-        comments = db.query(Comment).filter(Comment.category_id == category_id).all()
+        comments = db.query(Comment).filter(Comment.category_id == category_id).order_by(Comment.created_at.desc()).all()
         
         # Format comments with news details
         comment_data = []
