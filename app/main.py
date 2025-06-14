@@ -1098,9 +1098,12 @@ async def comments_view(request: Request, db: Session = Depends(get_db)):
         
         for category in categories:
             comment_count = db.query(Comment).filter(Comment.category_id == category.id).count()
+            last_comment = db.query(Comment).filter(Comment.category_id == category.id).order_by(Comment.created_at.desc()).first()
+            last_comment_date = last_comment.created_at if last_comment else None
             category_data.append({
                 "category": category,
-                "comment_count": comment_count
+                "comment_count": comment_count,
+                "last_comment_date": last_comment_date
             })
         
         return templates.TemplateResponse("comments_by_category.html", {

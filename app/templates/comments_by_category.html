@@ -42,7 +42,11 @@
                         <div class="category-description">{{ item.category.description }}</div>
                         {% endif %}
                         <div class="category-meta">
+                            {% if item.last_comment_date %}
+                            <span class="created-date">Last updated: {{ item.last_comment_date.strftime('%Y-%m-%d %H:%M') }}</span>
+                            {% else %}
                             <span class="created-date">Created: {{ item.category.created_at.strftime('%Y-%m-%d') }}</span>
+                            {% endif %}
                             {% if item.category.color %}
                             <span class="category-color" style="background-color: {{ item.category.color }};"></span>
                             {% endif %}
